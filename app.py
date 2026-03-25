@@ -1,65 +1,59 @@
 import streamlit as st
-import pandas as pd
-from sklearn.linear_model import LinearRegression, LogisticRegression
 
-# Title
-st.title("Student Performance & Behavior Predictor")
+# 1. Professional Page Setup
+st.set_page_config(page_title="Student Success Portal", layout="wide")
 
-# Dataset
-data = {
-    "Hours_Studied": [2, 4, 6, 8, 5, 7],
-    "Sleep_Hours": [6, 7, 5, 8, 6, 7],
-    "Attendance": [60, 75, 85, 90, 70, 88],
-    "Previous_Marks": [40, 50, 65, 80, 55, 75],
-    "Important_Qns": [1, 2, 3, 4, 2, 3],
-    "Marks": [45, 55, 70, 90, 60, 85],
-    "Cheating": [1, 0, 0, 0, 1, 0]
-}
+# 2. Check Login Status
+if 'authenticated' not in st.session_state:
+    st.session_state['authenticated'] = False
 
-df = pd.DataFrame(data)
+# --- LOGIN SCREEN ---
+def show_login():
+    st.title("🔐 Student Portal Login")
+    with st.form("login_form"):
+        user = st.text_input("Username")
+        pwd = st.text_input("Password", type="password")
+        submit = st.form_submit_button("Login")
+        
+        if submit:
+            if user == "Ramya" and pwd == "admin123":
+                st.session_state['authenticated'] = True
+                st.rerun()
+            else:
+                st.error("Invalid Username or Password")
 
-# Features
-X = df[["Hours_Studied", "Sleep_Hours", "Attendance", "Previous_Marks", "Important_Qns"]]
+# --- DASHBOARD ---
+def show_dashboard():
+    st.sidebar.title(f"Welcome, Ramya!")
+    if st.sidebar.button("Log Out"):
+        st.session_state['authenticated'] = False
+        st.rerun()
 
-# Models
-model_marks = LinearRegression()
-model_marks.fit(X, df["Marks"])
+    st.title("📊 Student Performance Dashboard")
+    
+    # Layout with Columns
+    col1, col2 = st.columns([1, 1])
+    
+    with col1:
+        st.subheader("Input Student Data")
+        study = st.slider("Study Hours", 0, 15, 7)
+        attendance = st.slider("Attendance %", 0, 100, 85)
+        # You can add your other sliders here
+        
+    with col2:
+        st.subheader("AI Prediction")
+        # Logic for prediction
+        marks = (study * 5) + (attendance * 0.2)
+        
+        st.metric(label="Predicted Marks", value=f"{marks:.2f}/100")
+        
+        if marks > 75:
+            st.success("High Performance Predicted")
+        else:
+            st.warning("Improvement Needed")
 
-model_cheat = LogisticRegression()
-model_cheat.fit(X, df["Cheating"])
-
-# User Inputs
-st.subheader("Enter Student Details")
-
-hours = st.slider("Study Hours", 0, 12)
-sleep = st.slider("Sleep Hours", 0, 12)
-attendance = st.slider("Attendance (%)", 0, 100)
-prev = st.slider("Previous Marks", 0, 100)
-imp = st.slider("Important Questions Answered", 0, 10)
-
-# Prediction Button
-if st.button("Predict"):
-    new_data = pd.DataFrame({
-        "Hours_Studied": [hours],
-        "Sleep_Hours": [sleep],
-        "Attendance": [attendance],
-        "Previous_Marks": [prev],
-        "Important_Qns": [imp]
-    })
-
-    marks_pred = model_marks.predict(new_data)
-    cheat_pred = model_cheat.predict(new_data)
-
-    st.subheader("Results")
-
-    st.write(f"Predicted Marks: {marks_pred[0]:.2f}")
-
-    if marks_pred[0] > 75:
-        st.success("Performance: Good")
-    else:
-        st.warning("Performance: Needs Improvement")
-
-    if cheat_pred[0] == 1:
-        st.error("⚠️ Possible Cheating Detected")
-    else:
-        st.success("✅ No Cheating Detected")
+# --- MAIN APP LOGIC ---
+if st.session_state['authenticated']:
+    show_dashboard()
+else:
+    show_login()
